@@ -1,0 +1,12 @@
+# ESP-IDF build artifacts
+build/
+*.pyc
+
+# Secrets
+main/secrets.h
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
