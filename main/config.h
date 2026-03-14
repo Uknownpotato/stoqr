@@ -32,7 +32,7 @@
 #define NVS_NAMESPACE               "stoqr"
 
 // HTTP API
-#define API_BASE_URL                "https://api.stoqr.app"
+#define API_BASE_URL                "https://stoqr-backend-production.up.railway.app"
 #define API_SCAN_ENDPOINT           "/scan"
 #define API_TIMEOUT_MS              10000
 
