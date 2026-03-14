@@ -3,6 +3,22 @@
 #include "esp_log.h"
 
 static const char *TAG = "scanner";
+static QueueHandle_t barcode_queue = NULL;
+
+static void scanner_task(void *arg) {
+    char barcode[64];
+    while (1) {
+        esp_err_t ret = scanner_read_barcode(barcode, sizeof(barcode));
+        if (ret == ESP_OK) {
+            xQueueSend(barcode_queue, barcode, 0);
+        }
+    }
+}
+
+void scanner_task_start(QueueHandle_t queue) {
+    barcode_queue = queue;
+    xTaskCreate(scanner_task, "scanner_task", 4096, NULL, 5, NULL);
+}
 
 esp_err_t scanner_init(void) {
     esp_err_t ret;

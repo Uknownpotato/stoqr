@@ -21,7 +21,7 @@ static void button_task(void *arg) {
 
             TickType_t held_ms = (xTaskGetTickCount() - press_time) * portTICK_PERIOD_MS;
         
-            if (held_ms >= 3000) {
+            if (held_ms >= 2000) {
                 current_event = BUTTON_EVENT_LONG_PRESS;
             } else {
                 TickType_t wait_start = xTaskGetTickCount();
