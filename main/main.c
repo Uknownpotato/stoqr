@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "uart.h"
+#include "buzzer.h"
 #include "scanner.h"
 #include "button.h"
 #include "led.h"
@@ -15,9 +16,11 @@ void app_main(void)
     ESP_LOGI(TAG, "Stoqr firmware starting...");
 
     if (led_init() != ESP_OK) return;
+    if (buzzer_init() != ESP_OK) return;
     if (scanner_init() != ESP_OK) return;
     if (button_init() != ESP_OK) return;
 
+    buzzer_boot();
     led_set_idle();
 
     QueueHandle_t barcode_queue = xQueueCreate(10, 64);
@@ -30,6 +33,7 @@ void app_main(void)
 
         if (event  == BUTTON_EVENT_SINGLE_CLICK) {
             ESP_LOGI(TAG, "Single click, ADD mode");
+            buzzer_success();
         } else if (event == BUTTON_EVENT_DOUBLE_CLICK) {
             ESP_LOGI(TAG, "Double click, REMOVE mode");
         } else if (event == BUTTON_EVENT_LONG_PRESS) {

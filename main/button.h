@@ -15,7 +15,5 @@ typedef enum {
 } button_mode_t;
 
 esp_err_t button_init(void);
-
 button_event_t button_get_event(void);
-
 button_mode_t button_get_mode(void);

@@ -21,8 +21,10 @@
 #define BUTTON_SINGLE_CLICK_MS      300
 #define BUTTON_DOUBLE_CLICK_MS      400
 
+// Buzzer
+#define BUZZER_PIN                  5
+
 // LED
-#define LED_PIN                     5
 #define ONBOARD_RGB_PIN             38
 
 // Power Management
