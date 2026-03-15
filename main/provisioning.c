@@ -7,6 +7,7 @@
 #include "esp_http_server.h"
 #include "esp_netif.h"
 #include <string.h>
+#include <stdlib.h>
 
 static const char *TAG = "provisioning";
 static httpd_handle_t server = NULL;
@@ -19,6 +20,23 @@ static const char *HTML_PAGE =
     "Password: <input name='pass' type='password'><br><br>"
     "<input type='submit' value='Connect'>"
     "</form></body></html>";
+
+static void url_decode(char *str) {
+    char *src = str, *dst = str;
+    while (*src) {
+        if (*src == '%' && src[1] && src[2]) {
+            char hex[3] = {src[1], src[2], 0};
+            *dst++ = (char)strtol(hex, NULL, 16);
+            src += 3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
     httpd_resp_send(req, HTML_PAGE, HTTPD_RESP_USE_STRLEN);
@@ -45,8 +63,8 @@ static esp_err_t save_post_handler(httpd_req_t *req) {
         if (end) strncpy(ssid, ssid_start, end - ssid_start);
         strncpy(pass, pass_start, sizeof(pass) - 1);
 
-        for (int i = 0; ssid[i]; i++) if (ssid[i] == '+') ssid[i] = ' ';
-        for (int i = 0; pass[i]; i++) if (pass[i] == '+') pass[i] = ' ';
+        url_decode(ssid);
+        url_decode(pass);
 
         nvs_write_wifi_credentials(ssid, pass);
         nvs_write_provisioned(true);

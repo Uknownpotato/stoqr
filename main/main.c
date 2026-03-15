@@ -6,6 +6,8 @@
 #include "led.h"
 #include "provisioning.h"
 #include "nvs_storage.h"
+#include "wifi_manager.h"
+#include "http_client.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -37,6 +39,19 @@ void app_main(void)
     buzzer_boot();
     led_set_idle();
 
+    char ssid[64], pass[64];
+    nvs_read_wifi_credentials(ssid, sizeof(ssid), pass, sizeof(pass));
+
+    ESP_LOGI(TAG, "Connecting to WiFi: %s", ssid);
+    wifi_manager_init();
+    esp_err_t wifi_ret = wifi_manager_connect(ssid, pass);
+    if (wifi_ret != ESP_OK) {
+        ESP_LOGE(TAG, "WiFi connection failed. Check credentials");
+    }
+    ESP_LOGI(TAG, "WiFi connected");
+
+    http_client_init();
+
     QueueHandle_t barcode_queue = xQueueCreate(10, 64);
     scanner_task_start(barcode_queue);
 
@@ -57,7 +72,20 @@ void app_main(void)
 
         if (xQueueReceive(barcode_queue, barcode, 0) == pdTRUE) {
             ESP_LOGI(TAG, "Got barcode: %s", barcode);
-            led_set_color(0, 255, 0);
+            char product_name[128];
+            button_mode_t mode = button_get_mode();
+            const char *action = (mode == BUTTON_MODE_ADD) ? "add" : "remove";
+
+            esp_err_t ret = http_client_send_scan(barcode, action, product_name, sizeof(product_name));
+            if (ret == ESP_OK) {
+                ESP_LOGI(TAG, "Product: %s", product_name);
+                led_set_color(0, 255, 0);
+                buzzer_success();
+            } else {
+                led_set_color(255, 0 ,0);
+                buzzer_fail();
+            }
+            
             vTaskDelay(pdMS_TO_TICKS(1000));
             led_set_idle();
         }
