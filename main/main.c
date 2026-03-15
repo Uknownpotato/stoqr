@@ -4,6 +4,8 @@
 #include "scanner.h"
 #include "button.h"
 #include "led.h"
+#include "provisioning.h"
+#include "nvs_storage.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -20,6 +22,18 @@ void app_main(void)
     if (scanner_init() != ESP_OK) return;
     if (button_init() != ESP_OK) return;
 
+    nvs_init();
+    
+    bool provisioned = false;
+    nvs_read_provisioned(&provisioned);
+
+    if (!provisioned) {
+        ESP_LOGI(TAG, "Not provisioned. Starting setup mode");
+        provisioning_start();
+        while (1) vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    ESP_LOGI(TAG, "Already provisioned. Starting normal mode");
     buzzer_boot();
     led_set_idle();
 
