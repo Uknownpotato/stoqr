@@ -47,8 +47,10 @@ void app_main(void)
     esp_err_t wifi_ret = wifi_manager_connect(ssid, pass);
     if (wifi_ret != ESP_OK) {
         ESP_LOGE(TAG, "WiFi connection failed. Check credentials");
+        led_set_error();
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
     }
-    ESP_LOGI(TAG, "WiFi connected");
 
     http_client_init();
 

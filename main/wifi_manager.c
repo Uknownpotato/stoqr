@@ -68,12 +68,6 @@ esp_err_t wifi_manager_init(void) {
         return ret;
     }
 
-    ret = esp_wifi_start();
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "WiFi start failed");
-        return ret;
-    }
-
     ESP_LOGI(TAG, "WiFi manager initialized");
     return ESP_OK;
 }
@@ -97,9 +91,9 @@ esp_err_t wifi_manager_connect(const char *ssid, const char *password) {
         return ret;
     }
 
-    ret = esp_wifi_connect();
+    ret = esp_wifi_start();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "WiFi connect failed");
+        ESP_LOGE(TAG, "WiFi start failed");
         return ret;
     }
 
