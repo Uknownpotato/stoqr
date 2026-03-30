@@ -36,9 +36,12 @@
 // HTTP API
 #define API_BASE_URL                "https://stoqr-backend-production.up.railway.app"
 #define API_SCAN_ENDPOINT           "/scan"
-#define API_TIMEOUT_MS              10000
+#define API_TIMEOUT_MS              30000
 
 // WiFi Provisioning
 #define PROV_AP_SSID                "Stoqr-Setup"
 #define PROV_AP_PASS                "stoqr1234"
 #define PROV_TIMEOUT_MS             120000
+
+#define API_CLAIM_ENDPOINT          "/devices/claim"
+#define API_POLL_ENDPOINT           "/devices/poll"

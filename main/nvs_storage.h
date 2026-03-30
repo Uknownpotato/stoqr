@@ -14,3 +14,5 @@ esp_err_t nvs_read_api_key(char *api_key, size_t key_len);
 esp_err_t nvs_write_provisioned(bool provisioned);
 esp_err_t nvs_read_provisioned(bool *provisioned);
 esp_err_t nvs_reset_credentials(void);
+esp_err_t nvs_write_claim_token(const char *token);
+esp_err_t nvs_read_claim_token(char *token, size_t token_len);

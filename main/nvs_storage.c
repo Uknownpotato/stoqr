@@ -269,3 +269,52 @@ esp_err_t nvs_reset_credentials(void) {
     nvs_close(handle);
     return ESP_OK;
 }
+
+esp_err_t nvs_write_claim_token(const char *token) {
+    nvs_handle_t handle;
+    esp_err_t ret;
+
+    ret = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS open READWRITE claim_token failed");
+        return ret;
+    }
+
+    ret = nvs_set_str(handle, "claim_token", token);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS set claim_token failed");
+        nvs_close(handle);
+        return ret;
+    }
+
+    ret = nvs_commit(handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS claim_token commit failed");
+        nvs_close(handle);
+        return ret;
+    }
+
+    nvs_close(handle);
+    return ESP_OK; 
+}
+
+esp_err_t nvs_read_claim_token(char *token, size_t token_len) {
+    nvs_handle_t handle;
+    esp_err_t ret;
+
+    ret = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS open READONLY claim_token failed");
+        return ret;
+    }
+
+    ret = nvs_get_str(handle, "claim_token", token, &token_len);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS get claim_token failed");
+        nvs_close(handle);
+        return ret;
+    }
+
+    nvs_close(handle);
+    return ESP_OK;
+}
