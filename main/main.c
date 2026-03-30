@@ -75,7 +75,7 @@ void app_main(void)
                 esp_restart();
             }
             nvs_write_claim_token(claim_token);
-            ESP_LOGI(TAG, "Device calimed, token: %s", claim_token);
+            ESP_LOGI(TAG, "Device claimed, token: %s", claim_token);
         } else {
             ESP_LOGI(TAG, "Resuming poll with existing token: %s", claim_token);
         }
