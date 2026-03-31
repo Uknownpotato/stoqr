@@ -44,9 +44,18 @@ void app_main(void)
 
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1) {
-        ESP_LOGI(TAG, "Woke up from deep sleep via button press");
-    } else {
-        ESP_LOGI(TAG, "Normal boots (wakeup cause: %d)", wakeup_reason);
+        TickType_t hold_start = xTaskGetTickCount();
+        while (gpio_get_level(BUTTON_PIN) == 0) {
+            uint32_t elapsed = (xTaskGetTickCount() - hold_start) * portTICK_PERIOD_MS;
+            led_set_color(elapsed % 1000 < 500 ? 255 : 0, 0, 0);
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        uint32_t held_ms = (xTaskGetTickCount() - hold_start) * portTICK_PERIOD_MS;
+
+        if (held_ms >= 12000) {
+            buzzer_beep(1000, 500);
+            nvs_factory_reset();
+        }
     }
     
     bool provisioned = false;

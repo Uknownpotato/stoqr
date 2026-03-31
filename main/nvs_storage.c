@@ -1,6 +1,7 @@
 #include "nvs_storage.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "esp_system.h"
 #include "esp_log.h"
 
 static const char *TAG = "NVS";
@@ -316,5 +317,17 @@ esp_err_t nvs_read_claim_token(char *token, size_t token_len) {
     }
 
     nvs_close(handle);
+    return ESP_OK;
+}
+
+esp_err_t nvs_factory_reset(void) {
+    ESP_LOGW(TAG, "Factory reset: erasing NVS...");
+    esp_err_t ret = nvs_flash_erase();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS erase failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+    ESP_LOGW(TAG, "NVS erased, rebooting...");
+    esp_restart();
     return ESP_OK;
 }
