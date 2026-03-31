@@ -9,14 +9,30 @@
 #include "wifi_manager.h"
 #include "http_client.h"
 #include "esp_log.h"
+#include "esp_sleep.h"
+#include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
 static const char *TAG = "main";
 
+static void enter_deep_sleep(void) {
+    while (gpio_get_level(BUTTON_PIN) == 0) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    vTaskDelay(pdMS_TO_TICKS(200));
+    gpio_pullup_en(BUTTON_PIN);
+    gpio_pulldown_dis(BUTTON_PIN);
+    gpio_hold_en(BUTTON_PIN);
+    esp_sleep_enable_ext1_wakeup(1ULL << BUTTON_PIN, ESP_EXT1_WAKEUP_ANY_LOW);
+    ESP_LOGI(TAG, "Entering deep sleep...");
+    esp_deep_sleep_start();
+}
+
 void app_main(void)
 {
+    gpio_hold_dis(BUTTON_PIN);
     ESP_LOGI(TAG, "Stoqr firmware starting...");
 
     if (led_init() != ESP_OK) return;
@@ -25,6 +41,13 @@ void app_main(void)
     if (button_init() != ESP_OK) return;
 
     nvs_init();
+
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+    if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1) {
+        ESP_LOGI(TAG, "Woke up from deep sleep via button press");
+    } else {
+        ESP_LOGI(TAG, "Normal boots (wakeup cause: %d)", wakeup_reason);
+    }
     
     bool provisioned = false;
     nvs_read_provisioned(&provisioned);
@@ -46,13 +69,17 @@ void app_main(void)
     ESP_LOGI(TAG, "Connecting to WiFi: %s", ssid);
     led_set_color(255, 165, 0);
     wifi_manager_init();
+
     esp_err_t wifi_ret = wifi_manager_connect(ssid, pass);
-    if (wifi_ret != ESP_OK) {
-        ESP_LOGE(TAG, "WiFi connection failed. Check credentials");
+    int wifi_retry = 0;
+    while (wifi_ret != ESP_OK) {
+        ESP_LOGW(TAG, "WiFi failed, retrying in 10s... (attempt %d)", ++wifi_retry);
         led_set_error();
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
+        vTaskDelay(pdMS_TO_TICKS(10000));
+        wifi_ret = wifi_manager_retry();
+
     }
+    led_set_idle();
 
     http_client_init();
 
@@ -108,6 +135,7 @@ void app_main(void)
     scanner_task_start(barcode_queue);
 
     char barcode[64];
+    TickType_t last_activity = xTaskGetTickCount();
 
     while (1) {
         button_event_t event = button_get_event();
@@ -120,9 +148,15 @@ void app_main(void)
         } else if (event == BUTTON_EVENT_LONG_PRESS) {
             ESP_LOGI(TAG, "Long press, going to sleep");
             led_fade_out();
+            buzzer_beep(1000, 200);
+            enter_deep_sleep();
         }
 
+        if (event != BUTTON_EVENT_NONE) {
+            last_activity = xTaskGetTickCount();
+        }
         if (xQueueReceive(barcode_queue, barcode, 0) == pdTRUE) {
+            last_activity = xTaskGetTickCount();
             ESP_LOGI(TAG, "Got barcode: %s", barcode);
             char product_name[128];
             button_mode_t mode = button_get_mode();
@@ -142,6 +176,11 @@ void app_main(void)
             led_set_idle();
         }
 
+        if ((xTaskGetTickCount() - last_activity) * portTICK_PERIOD_MS > DEEP_SLEEP_TIMEOUT_MS) {
+            ESP_LOGI(TAG, "Inactivity timeout, going to sleep");
+            led_fade_out();
+            enter_deep_sleep();
+        }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

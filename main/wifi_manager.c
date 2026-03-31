@@ -127,3 +127,21 @@ esp_err_t wifi_manager_disconnect(void) {
 bool wifi_manager_is_connected(void) {
     return (xEventGroupGetBits(wifi_event_group) & WIFI_CONNECTED_BIT) != 0;
 }
+
+esp_err_t wifi_manager_retry(void) {
+    retry_count = 0;
+    xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT);
+    esp_err_t ret = esp_wifi_connect();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "WiFi retry failed");
+        return ret;
+    }
+    EventBits_t bits = xEventGroupWaitBits(
+        wifi_event_group,
+        WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+        pdFALSE,
+        pdFALSE,
+        portMAX_DELAY
+    );
+    return (bits & WIFI_CONNECTED_BIT) ? ESP_OK : ESP_FAIL;
+}
